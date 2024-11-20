@@ -5,6 +5,7 @@ from base_model import BaseModel
 import json
 
 def make_inference(drug1, drug2):
+    h, t = drug2id(drug1, drug2)
     #I've changed a few things in other scripts to make this work on CPU by changing parts that say .cuda() to .to('cpu')
     parser = argparse.ArgumentParser(description="Parser for EmerGNN")
     parser.add_argument('--task_dir', type=str, default='./', help='the directory to dataset')
@@ -39,12 +40,12 @@ def make_inference(drug1, drug2):
 
     model = BaseModel(eval_ent, eval_rel, args, entity_vocab=dataloader.id2entity, relation_vocab=dataloader.id2relation)
 
-    h, t = drug2id(drug1, drug2)
     triplet_to_test = torch.tensor([h, t])
 
     pred = model.test_single(triplet_to_test, KG)
     print('Prediction on '+str(triplet_to_test[0]) + ' and '+str(triplet_to_test[1]))
-    return pred
+
+    return id2relations(pred)
 
 def drug2id(drug1, drug2):
     with open('data/id2drug.json') as f:
@@ -64,5 +65,15 @@ def drug2id(drug1, drug2):
     
     return int(ids[0]), int(ids[1])
 
-print(make_inference('CID000005090', 'C1=NC(=NN1C2C(C(C(O2)CO)O)O)C(=O)N'))
+def id2relations(id):
+    with open('id2relation.json') as f:
+        id2rel = json.load(f)
+
+    relations = []
+    for i, j in enumerate(id[0]):
+        if j:
+            relations.append(id2rel[str(i)])
+    return relations
+ 
+print(make_inference('DB00472', 'DB00780'))
 
